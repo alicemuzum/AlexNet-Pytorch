@@ -2,8 +2,8 @@ import torch.nn as nn
 import torch
 
 config = [
-    # (3,227,227) input size
-    (11, 96, 4, 0),  # (96, 55, 55)
+                    # (3,227,227) input size
+    (11, 96, 4, 0), # (96, 55, 55)
     "N",
     "M",            # (96, 27, 27)
     (5, 256, 1, 2), # (256, 27, 27)
@@ -12,20 +12,9 @@ config = [
     (3, 384, 1, 1), # (384, 13, 13)
     (3, 384, 1, 1), # (384, 13, 13)
     (3, 256, 1, 1), # (256, 13, 13)
-    "M"
+    "M"             # (256, 6, 6) output size
 
 ]
-
-
-
-class CNNBlock(nn.Module):
-    def __init__(self, input_ch, output_ch, **kwargs):
-        super(CNNBlock,self).__init__()
-        self.conv = nn.Conv2d(input_ch, output_ch, bias=False,**kwargs)
-        self.relu = nn.ReLU()
-
-    def forward(self,x):
-        return self.relu(self.conv(x))
     
 # input size should be : (b x 3 x 227 x 227)
 # The image in the original paper states that width and height are 224 pixels, but
@@ -52,9 +41,9 @@ class AlexNet(nn.Module):
             if isinstance(layer, nn.Linear):
                 nn.init.normal_(layer.weight, mean=0, std=0.01)
                 nn.init.constant_(layer.bias,1)
-        nn.init.constant_(self.conv[3].bias, 1)
-        nn.init.constant_(self.conv[7].bias, 1)
-        nn.init.constant_(self.conv[8].bias, 1)
+        nn.init.constant_(self.conv[4].bias, 1)
+        nn.init.constant_(self.conv[10].bias, 1)
+        nn.init.constant_(self.conv[12].bias, 1)
 
     def _create_conv_net(self, config):
 
@@ -64,15 +53,15 @@ class AlexNet(nn.Module):
         for idx, block in enumerate(config):
             if type(block) == tuple:        
                 layers += [
-                    CNNBlock(input_ch, block[1], kernel_size=block[0], 
-                             stride=block[2], padding=block[3] )
+                    nn.Conv2d(input_ch, block[1],kernel_size=block[0],
+                               stride=block[2],padding=block[3]),
                 ]
+                layers += [nn.ReLU()]
                 input_ch = block[1]
 
             elif type(block) == str:
                 if block == "M":
                     layers += [nn.MaxPool2d(kernel_size=3, stride=2)]
-                    input_ch = int(((input_ch - 3) / 2 ) + 1)
 
                 if block == "N":
                     layers += [nn.LocalResponseNorm(k=2,size=5)]
@@ -84,10 +73,10 @@ class AlexNet(nn.Module):
             nn.Flatten(),
             nn.Linear(6*6*256, 4096),
             nn.ReLU(),
-            nn.Dropout(0.5, inplace=True),
+            nn.Dropout(0.5),
             nn.Linear(4096, 4096),
             nn.ReLU(),
-            nn.Dropout(0.5, inplace=True),
+            nn.Dropout(0.5),
             nn.Linear(4096, num_classes)
         )
                   
