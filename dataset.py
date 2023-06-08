@@ -8,7 +8,8 @@ import torchvision.transforms as T
 import numpy as np
 
 class PascalDataset(torch.utils.data.Dataset):
-    def __init__(self, csv_file, img_dir, label_dir, num_classes, fold_indexes, transform = None):
+    def __init__(self, csv_file, img_dir, label_dir, num_classes, fold_indexes):
+        super(PascalDataset,self).__init__()
         self.annotations = pd.read_csv(csv_file,names=["images","labels"])
         self.annotations = self.annotations.iloc[fold_indexes] # slice data according to the fold
         self.img_dir = img_dir
@@ -25,16 +26,13 @@ class PascalDataset(torch.utils.data.Dataset):
         classes = []
 
         with open(label_dir) as f:
-            for row in f.readlines():
-                elems = row.split()
-                classes.append(elems[0])
+            for l in f.readlines():
+                classes.append(l.split()[0])
     
 
         image = Image.open(image_dir)
-        min_index = np.argmin(image.size)
-        min_value = image.size[min_index]
         transform = T.Compose([
-            OneDimResize(256,min_index),
+            T.Resize(256),
             T.CenterCrop(227),
             T.ToTensor()
         ])
@@ -49,18 +47,5 @@ class PascalDataset(torch.utils.data.Dataset):
         
         return image, labels
 
-
-class OneDimResize:
-    def __init__(self,size, min_index):
-        self.size = size
-        self.min_index = min_index
-        
-
-    def __call__(self,img):
-        w, h = img.size
-        aspect_ratio = float(h) / float(w)
-        new_dim = int(self.size * aspect_ratio)
-        resize_size = (self.size,new_dim) if self.min_index == 0 else (new_dim,self.size)
-        return F.resize(img,size=resize_size)
 
 

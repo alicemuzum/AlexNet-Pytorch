@@ -25,12 +25,16 @@ class AlexNet(nn.Module):
         super(AlexNet,self).__init__()
         self.config = config
         self.input_ch = input_ch
-        self.conv = self._create_conv_net(self.config)
-        self.linear = self._create_linear_net(num_classes)
-        self.init_bias()
+        self.net = self._create_net()
+      
+        #self.init_bias()
         
     def forward(self,x):
-        return self.linear(self.conv(x))
+        out = self.conv1(x)
+        out = self.conv2(out)
+        out = self.conv3(out)
+        out = self.linear(out)
+        return out 
     
     def init_bias(self):
         for layer in self.conv:
@@ -44,39 +48,38 @@ class AlexNet(nn.Module):
         nn.init.constant_(self.conv[4].bias, 1)
         nn.init.constant_(self.conv[10].bias, 1)
         nn.init.constant_(self.conv[12].bias, 1)
+        print("Data Norm in weight init:",self.conv[0].weight.data.norm())
 
-    def _create_conv_net(self, config):
+    def _create_net(self):
 
-        layers = []
-        input_ch = self.input_ch
-
-        for idx, block in enumerate(config):
-            if type(block) == tuple:        
-                layers += [
-                    nn.Conv2d(input_ch, block[1],kernel_size=block[0],
-                               stride=block[2],padding=block[3]),
-                ]
-                layers += [nn.ReLU()]
-                input_ch = block[1]
-
-            elif type(block) == str:
-                if block == "M":
-                    layers += [nn.MaxPool2d(kernel_size=3, stride=2)]
-
-                if block == "N":
-                    layers += [nn.LocalResponseNorm(k=2,size=5)]
-        
-        return nn.Sequential(*layers)
-
-    def _create_linear_net(self, num_classes):
-        return nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(6*6*256, 4096),
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(3, 96, 11, 4),
             nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(4096, 4096),
-            nn.ReLU(),
-            nn.Dropout(0.5),
-            nn.Linear(4096, num_classes)
+            nn.LocalResponseNorm(5,alpha=1e-4,beta=0.75,k=2),
+            nn.MaxPool2d(3,2)
         )
-                  
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(96,256,5,padding=2),
+            nn.ReLU(),
+            nn.LocalResponseNorm(5,alpha=1e-4,beta=0.75,k=2),
+            nn.MaxPool2d(3,2)
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(256,384,3,padding=1),
+            nn.ReLU(),
+            nn.Conv2d(384,384,3,padding=1),
+            nn.ReLU(),
+            nn.Conv2d(384,256,3,padding=1),
+            nn.MaxPool2d(3,2),
+        )
+        self.linear = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(256*6*6,4096),
+            nn.ReLU(),
+            nn.Linear(4096,2048),
+            nn.ReLU(),
+            nn.Linear(2048,20)
+        )
+
+  
+        
