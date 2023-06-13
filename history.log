@@ -1,0 +1,8 @@
+root - INFO - Average Training Loss: 0.2006 	 Average Test Loss: 0.4578 	 Average Training Acc: 0.519 	 Average Test Acc: 0.234
+ Avg Train Hamming 0.04 	 Avg Valid Hamming 0.06 	 Avg Train Precision 0.93 	 Avg Valid Precision 0.80 	 Avg Train Recall 0.58 	 Avg Valid Recall 0.37 	 Avg Train F1 0.59 	 Avg Valid F1 0.38 
+root - INFO - Average Training Loss: 0.4764 	 Average Test Loss: 0.4755 	 Average Training Acc: 0.000 	 Average Test Acc: 0.000
+ Avg Train Hamming 0.07 	 Avg Valid Hamming 0.07 	 Avg Train Precision 1.00 	 Avg Valid Precision 1.00 	 Avg Train Recall 0.00 	 Avg Valid Recall 0.00 	 Avg Train F1 0.00 	 Avg Valid F1 0.00 
+root - INFO - Average Training Loss: 0.2141 	 Average Test Loss: 0.4549 	 Average Training Acc: 0.486 	 Average Test Acc: 0.225
+ Avg Train Hamming 0.04 	 Avg Valid Hamming 0.06 	 Avg Train Precision 0.92 	 Avg Valid Precision 0.81 	 Avg Train Recall 0.55 	 Avg Valid Recall 0.35 	 Avg Train F1 0.56 	 Avg Valid F1 0.36 
+root - INFO - Average Training Loss: 0.2910 	 Average Test Loss: 0.3452 	 Average Training Acc: 0.292 	 Average Test Acc: 0.219
+ Avg Train Hamming 0.05 	 Avg Valid Hamming 0.06 	 Avg Train Precision 0.89 	 Avg Valid Precision 0.83 	 Avg Train Recall 0.40 	 Avg Valid Recall 0.33 	 Avg Train F1 0.42 	 Avg Valid F1 0.35 

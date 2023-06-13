@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import torch
+import utils
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader
 import os
@@ -74,7 +75,8 @@ class Tester(unittest.TestCase):
         print(output.shape)
 
 
-        
+    def test_class_distribution(self,dataset):
+        utils.plot_class_dist(dataset)
 
 
 

@@ -76,6 +76,7 @@ class AlexNet(nn.Module):
             nn.Flatten(),
             nn.Linear(256*6*6,4096),
             nn.ReLU(),
+            nn.Dropout(0.8),
             nn.Linear(4096,2048),
             nn.ReLU(),
             nn.Linear(2048,20)

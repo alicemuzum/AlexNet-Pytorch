@@ -10,12 +10,15 @@ import numpy as np
 class PascalDataset(torch.utils.data.Dataset):
     def __init__(self, csv_file, img_dir, label_dir, num_classes, fold_indexes):
         super(PascalDataset,self).__init__()
-        self.annotations = pd.read_csv(csv_file,names=["images","labels"])
+        self.annotations = pd.read_csv(csv_file,names=["images","labels"])  
         self.annotations = self.annotations.iloc[fold_indexes] # slice data according to the fold
         self.img_dir = img_dir
         self.label_dir = label_dir
         self.num_classes = num_classes
         self.fold_indexes = fold_indexes
+    
+    def get_annotations(self):
+        return self.annotations
     
     def __len__(self):
         return len(self.annotations)
