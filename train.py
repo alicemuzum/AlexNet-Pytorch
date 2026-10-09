@@ -265,10 +265,12 @@ def main():
     plt.subplot(2,1,1) 
     plt.title("Loss")
     plt.plot(range(NUM_EPOCHS), history['train_loss'], "r", range(NUM_EPOCHS), history['valid_loss'],"g")
+    plt.legend(["train", "valid"])
 
     plt.subplot(2,1,2) 
     plt.title("mAP")
     plt.plot(range(NUM_EPOCHS), history['train_map'], "r", range(NUM_EPOCHS), history['valid_map'],"g")
+    plt.legend(["train", "valid"])
 
     plt.tight_layout()
     plt.savefig(os.path.join("plots", OUTPUT_FILENAME + ".png"))
