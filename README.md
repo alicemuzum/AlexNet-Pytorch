@@ -1,5 +1,9 @@
 # AlexNet from Scratch on Pascal VOC
 
+![Python](https://img.shields.io/badge/python-3.10-blue)
+![PyTorch](https://img.shields.io/badge/pytorch-2.1-ee4c2c)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 A PyTorch implementation of AlexNet ([Krizhevsky et al., 2012](https://papers.nips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html)), trained **from scratch** (no ImageNet pretraining) for **multi-label image classification** on Pascal VOC. Each image can contain several of the 20 object classes, so the network predicts an independent probability per class.
 
 **Test set result: 54.2% mAP** on the 4,952 images of VOC2007 test, trained from scratch. For comparison, the same training without data augmentation reaches 42.4%, and fine-tuning an ImageNet-pretrained AlexNet reaches 75.6% (see [Comparison runs](#comparison-runs)).
@@ -174,6 +178,15 @@ Other scripts:
 ├── overfit.py    overfitting sanity check
 └── plots/        figures
 ```
+
+## What I learned
+
+- **Exact match accuracy is a bad main metric for multi-label.** Early on my accuracy stayed at 0 and I thought the model was not learning. With 20 classes and a 0.5 threshold, the model first predicts "nothing" for every class, which gives high precision, almost zero recall and 0 exact matches. mAP does not depend on a threshold, so it shows progress from the first epoch.
+- **Check the evaluation code as carefully as the model.** Several bugs made my numbers wrong without crashing anything: metrics averaged per batch instead of over the whole set, the loss divided by the batch size instead of the number of batches, a validation loader that dropped the last batch, and a test script that skipped the first image. A missing ReLU after the last conv layer also trained without any error, so it was easy to miss.
+- **Overfit a tiny subset first.** `overfit.py` trains on 16 images until it memorizes them. If that fails, the problem is in the pipeline, not the hyperparameters.
+- **On a small dataset, augmentation makes a big difference.** Random crops and flips gave +12 mAP. Without them the model reaches 0.99 train mAP and gets worse on validation after epoch 27.
+- **Pretrained features beat training from scratch by a lot.** The same architecture fine-tuned from ImageNet reaches 0.76 mAP in a few epochs, compared to 0.54 after 60 epochs from scratch. 11k images are not enough to learn good low-level features.
+- **Read the paper closely, but also check the numbers.** The paper says 224×224 input, but the layer sizes only work out with 227×227.
 
 ## References
 
