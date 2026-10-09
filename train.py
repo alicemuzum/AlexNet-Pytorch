@@ -17,9 +17,9 @@ import json
 
 
 IMG_SIZE = 227
-TRAIN_CSV = "../data/PascalVOC/train.csv"
-IMG_DIR = "../data/PascalVOC/images"
-LABEL_DIR = "../data/PascalVOC/labels"
+TRAIN_CSV = "data/PascalVOC/train.csv"
+IMG_DIR = "data/PascalVOC/images"
+LABEL_DIR = "data/PascalVOC/labels"
 LOG_DIR = "log"
 CHECKPOINT_DIR = "models"
 NUM_CLASSES = 20

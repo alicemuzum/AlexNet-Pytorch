@@ -14,7 +14,7 @@ Contains unit test for source codes.
 class Tester(unittest.TestCase):
     def __init__(self):
         super(Tester,self).__init__()
-        self.annotations = pd.read_csv("../data/PascalVOC/train.csv",names=["images","labels"])
+        self.annotations = pd.read_csv("data/PascalVOC/train.csv",names=["images","labels"])
 
     def test_dataset(self,train_index, valid_index):
 

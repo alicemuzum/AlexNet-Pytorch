@@ -10,9 +10,9 @@ import pandas as pd
 import os
 import sys
 
-TEST_CSV = "../data/PascalVOC/test.csv"
-IMG_DIR = "../data/PascalVOC/images"
-LABEL_DIR = "../data/PascalVOC/labels"
+TEST_CSV = "data/PascalVOC/test.csv"
+IMG_DIR = "data/PascalVOC/images"
+LABEL_DIR = "data/PascalVOC/labels"
 BATCH_SIZE = 64
 device = "cuda" if torch.cuda.is_available() else "cpu"
 CHECKPOINT = os.path.join(t.CHECKPOINT_DIR, t.OUTPUT_FILENAME)
