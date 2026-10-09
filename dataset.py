@@ -1,11 +1,8 @@
 import torch
 import os
 import pandas as pd
-import math
 from PIL import Image
-from torchvision.transforms import functional as F
 import torchvision.transforms as T
-import numpy as np
 
 class PascalDataset(torch.utils.data.Dataset):
     def __init__(self, csv_file, img_dir, label_dir, num_classes, fold_indexes):

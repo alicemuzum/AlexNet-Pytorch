@@ -6,20 +6,15 @@ import matplotlib.pyplot as plt
 import torch.optim as optim
 import torch.nn.functional as F
 import pandas as pd
-from sklearn import metrics
-from sklearn.model_selection import KFold
 from tqdm import tqdm
 import utils 
 import numpy as np
 import os
 import logging
-import warnings
 import json
 
 
 
-warnings.filterwarnings("always")
-# from tensorboardX import SummaryWriter
 
 IMG_SIZE = 227
 TRAIN_CSV = "../data/PascalVOC/train.csv"
@@ -61,21 +56,6 @@ classes = {
     18: "train",
     19: "tv_monitor",
 }
-"""
-To Do:
-    - Data Augmentation kısmını impleme et.
-    + Weight Inıt
-    - AlexNEtteki kwargsa bak
-    + Add validataion set
-    - Use tensorboardX
-    - * ne işe yarrıyor not al
-    + Test csvden sonunc al
-    + loss foksiyonunu kontrol et çünkü outputa uygun olmayabilir
-    + Accuracy neden sıfırda kalıyor bul.
-    - Overfiti halllet
-    - Precision recall f1 nedir anla
-    - Class dist plot
-"""
 
 
 def train(model, device, train_loader, optimizer):
@@ -183,12 +163,7 @@ def main():
         optimizer, step_size=SCHEDULER_STEP, gamma=0.1
     )
     data = pd.read_csv(TRAIN_CSV, names=["images", "labels"])
-    kf = KFold(n_splits=K)
 
-    # # one loop for cross validation, one loop for epochs, one loop for training batches
-    # for fold, (train_index, valid_index) in enumerate(
-    #     kf.split(data["images"], data["labels"])
-    # ):
     print("opt lr:", optimizer.param_groups[0]["lr"])
     train_index = np.arange(0,int((data.shape[0] * 2) / 3))
     valid_index = np.arange(int((data.shape[0] * 2) / 3), data.shape[0])
@@ -200,8 +175,6 @@ def main():
         TRAIN_CSV, IMG_DIR, LABEL_DIR, NUM_CLASSES, valid_index
     )
 
-    #utils.plot_class_dist(train_dataset)
-    #utils.plot_class_dist(valid_dataset)
 
     train_loader = DataLoader(
         dataset=train_dataset,

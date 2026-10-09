@@ -5,7 +5,6 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import numpy as np
 import utils
-import pickle
 
 TEST_CSV = "../data/PascalVOC/test.csv"
 IMG_DIR = "../data/PascalVOC/images"
@@ -13,10 +12,6 @@ LABEL_DIR = "../data/PascalVOC/labels"
 BATCH_SIZE = 64
 device = "cuda" if torch.cuda.is_available() else "cpu"
 def test():
-    # with open('models/overfit.pkl', 'rb') as f:
-    #     models = pickle.load(f) # deserialize using load()
-    #     print(models)
-    # model.load_state_dict(torch.load(PATH))
     indexes = np.arange(1,4952)
     test_dataset = dataset.PascalDataset(TEST_CSV,IMG_DIR,LABEL_DIR,20,indexes)
     test_loader = DataLoader(

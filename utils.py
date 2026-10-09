@@ -9,19 +9,19 @@ def get_metrics(label_batch, y_pred):
 
     exact_match = metrics.accuracy_score(
         label_batch, y_pred, normalize=True
-        )  # Ne kadar prediction tamı tamına aynısı
+        )  # how many predictions match the labels exactly
     hamming_loss = metrics.hamming_loss(
             label_batch, y_pred
-        )  # Error rate, 0 iyi 1 kötü
+        )  # error rate, 0 is good 1 is bad
     precision = metrics.precision_score(
             label_batch, y_pred, average="samples", zero_division=1
-        )  # Ne kadar negative olanı positive tahmin etmiyor. 1 en iyi
+        )  # how well it avoids predicting negatives as positive. 1 is best
     recall = metrics.recall_score(
             label_batch, y_pred, average="samples"
-        )  # Ne kadar positive olanlara positive demiş. 1 en iyi
+        )  # how many positives it predicted as positive. 1 is best
     f_1 = metrics.f1_score(
             label_batch, y_pred, average="samples"
-        )  # precision ve recallın oranı 1 iyi 0 kötü
+        )  # balance of precision and recall, 1 is good 0 is bad
 
     return {
         "acc": exact_match,

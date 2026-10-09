@@ -1,1 +1,8 @@
-models/
+models/*
+!models/.gitkeep
+log/*
+!log/.gitkeep
+__pycache__/
+*.pyc
+.vscode/
+history.log

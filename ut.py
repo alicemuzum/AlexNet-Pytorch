@@ -7,10 +7,7 @@ import pandas as pd
 import numpy as np
 import torch
 import utils
-from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader
-import os
-from PIL import Image
 """
 Contains unit test for source codes.
 """
@@ -34,7 +31,6 @@ class Tester(unittest.TestCase):
                 plt.imshow(image)
             plt.show()
 
-        kf = KFold(n_splits=4)
         print("Shape of annotations before slicing: {} \nDivided by batch size of {}: {}".format(self.annotations.shape, t.BATCH_SIZE ,self.annotations.shape[0] / t.BATCH_SIZE))
         
         train_dataset = d.PascalDataset(t.TRAIN_CSV, t.IMG_DIR,t.LABEL_DIR, t.NUM_CLASSES, train_index)
@@ -82,9 +78,6 @@ class Tester(unittest.TestCase):
 
 def main():
     tester = Tester()
-    # train_index = np.random.randint(0,1000,size=(1000,))
-    # valid_index = [3,4,5]
-    # tester.test_dataset(train_index, valid_index)
     tester.test_model()
 if __name__ == "__main__":
     main()

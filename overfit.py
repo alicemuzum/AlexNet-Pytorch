@@ -4,10 +4,7 @@ import train as t
 import torch
 import torch.nn.functional as F
 import numpy as np
-import model
 from torch.utils.data import DataLoader
-import pandas as pd 
-from sklearn.model_selection import KFold
 from tqdm import tqdm
 
 class AlexNet(nn.Module):
