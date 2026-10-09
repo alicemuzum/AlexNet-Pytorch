@@ -9,6 +9,7 @@ import train as t
 import pandas as pd
 import os
 import sys
+import json
 
 TEST_CSV = "data/PascalVOC/test.csv"
 IMG_DIR = "data/PascalVOC/images"
@@ -33,7 +34,10 @@ def test():
         num_workers=8,
         drop_last=False,
         )
-    net = model.AlexNet(20).to(device)
+    if "pretrained" in CHECKPOINT:
+        net = model.pretrained_alexnet(20).to(device)
+    else:
+        net = model.AlexNet(20).to(device)
     net.load_state_dict(torch.load(CHECKPOINT, map_location=device)['model'])
     net.eval()
     mean_loss = []
@@ -80,6 +84,21 @@ def test():
     print("AP per class:")
     for i in range(len(ap_list)):
         print("  {:<14} {:.4f}".format(t.classes[i], ap_list[i]))
+
+    results = {
+        "checkpoint": CHECKPOINT,
+        "test_images": len(all_labels),
+        "loss": loss,
+        "map": test_map,
+        "acc": test_metrics["acc"],
+        "hamming_loss": test_metrics["hamming_loss"],
+        "precision": test_metrics["precision"],
+        "recall": test_metrics["recall"],
+        "f1": test_metrics["f1"],
+        "ap": ap_list,
+    }
+    with open(os.path.join(t.LOG_DIR, os.path.basename(CHECKPOINT) + "_test.json"), "w") as f:
+        json.dump(results, f)
 
 if __name__ == "__main__":
     test()

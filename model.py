@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torchvision
 
 # input size should be : (b x 3 x 227 x 227)
 # The image in the original paper states that width and height are 224 pixels, but
@@ -52,5 +53,8 @@ class AlexNet(nn.Module):
             nn.Linear(4096,self.num_classes)
         )
 
-  
-        
+
+def pretrained_alexnet(num_classes):
+    net = torchvision.models.alexnet(weights=torchvision.models.AlexNet_Weights.IMAGENET1K_V1)
+    net.classifier[6] = nn.Linear(4096, num_classes)
+    return net

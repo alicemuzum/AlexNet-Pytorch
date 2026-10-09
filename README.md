@@ -2,11 +2,11 @@
 
 A PyTorch implementation of AlexNet ([Krizhevsky et al., 2012](https://papers.nips.cc/paper/2012/hash/c399862d3b9d6b76c8436e924a68c45b-Abstract.html)), trained **from scratch** (no ImageNet pretraining) for **multi-label image classification** on Pascal VOC. Each image can contain several of the 20 object classes, so the network predicts an independent probability per class.
 
-**Test set result: 54.2% mAP** on the 4,952 images of VOC2007 test.
+**Test set result: 54.2% mAP** on the 4,952 images of VOC2007 test, trained from scratch. For comparison, the same training without data augmentation reaches 42.4%, and fine-tuning an ImageNet-pretrained AlexNet reaches 75.6% (see [Comparison runs](#comparison-runs)).
 
 ## Results
 
-Trained for 60 epochs on a single RTX 3060 Laptop GPU (about 30 seconds per epoch, ~30 minutes total).
+Results of the from-scratch model. Trained for 60 epochs on a single RTX 3060 Laptop GPU (about 30 seconds per epoch, ~30 minutes total).
 
 | Metric (VOC2007 test, 4,952 images) | Score |
 | --- | --- |
@@ -29,20 +29,40 @@ Predictions use a 0.5 threshold on the sigmoid outputs. mAP is the mean of per-c
 
 ### Average precision per class
 
-| Class | AP | Class | AP |
-| --- | --- | --- | --- |
-| person | 0.866 | bird | 0.504 |
-| car | 0.769 | dog | 0.489 |
-| aeroplane | 0.736 | tv_monitor | 0.488 |
-| train | 0.724 | diningtable | 0.457 |
-| horse | 0.712 | chair | 0.446 |
-| motorbike | 0.704 | sofa | 0.434 |
-| bicycle | 0.628 | sheep | 0.404 |
-| bus | 0.566 | cow | 0.329 |
-| boat | 0.558 | potted_plant | 0.317 |
-| cat | 0.529 | bottle | 0.188 |
+![AP per class for all three runs](plots/ap_per_class.png)
 
-Classes that are common and usually large in the image (person, car, aeroplane) are the easiest. Small objects (bottle, potted plant) and classes that look alike (cow and sheep) are the hardest.
+![Class distribution](plots/class_distribution.png)
+
+Classes that are common and usually large in the image (person, car, aeroplane) are the easiest. Bottle is the hardest class even though it has more training images than most classes, probably because bottles are usually small in the image and get lost after resizing to 227×227. Cow and sheep are the rarest classes and also look alike, so they score low too.
+
+### Sample predictions
+
+Twelve random test images (not hand-picked) from the from-scratch model. Green means the predicted set of labels is exactly right, red means at least one label is missing or extra.
+
+![Sample predictions](plots/sample_predictions.png)
+
+Most mistakes are partial: the model finds the main object but misses a second one (dog next to people) or adds a related one (dining table for a table scene with bottles). Small or unusual views (a train seen from the window, a bird close-up) are often missed completely.
+
+## Comparison runs
+
+To see what matters most, I trained two more models with the same settings (60 epochs, same split and seed) and changed one thing each time:
+
+- **No augmentation:** center crop only, no random crops or flips (`python train.py --no-aug`).
+- **ImageNet pretrained:** torchvision's AlexNet with ImageNet weights, with the last layer replaced by a 20-class layer and the whole network fine-tuned (`python train.py --pretrained`). Note that torchvision's AlexNet is a slightly different version (64 filters in the first layer, no LRN).
+
+| Run | Test mAP (last epoch) | Test mAP (best valid epoch) | F1 | Exact match |
+| --- | --- | --- | --- | --- |
+| From scratch | **0.542** | (best valid at epoch 56, ≈ last) | 0.534 | 0.370 |
+| From scratch, no augmentation | 0.424 | 0.445 (epoch 27) | 0.478 | 0.289 |
+| ImageNet pretrained | **0.756** | 0.768 (epoch 6) | 0.729 | 0.536 |
+
+F1 and exact match are for the last epoch checkpoint.
+
+![Train and validation curves for the three runs](plots/run_comparison.png)
+
+- **Augmentation is worth about 12 mAP points.** Without it the model memorizes the training set (train mAP 0.99) while validation mAP peaks at epoch 27 and then goes down. Validation loss climbs from about 0.17 to 0.37.
+- **Pretraining is worth about 21 mAP points.** 11k images are not enough to learn good features from scratch. The pretrained model reaches its best validation mAP after only 6 epochs and then slowly overfits, so 60 epochs is far too long for fine-tuning.
+- Even the best run is far from modern models on VOC, which is expected for a 2012 architecture.
 
 ## Model
 
@@ -111,9 +131,11 @@ Train:
 
 ```bash
 python train.py
+python train.py --no-aug       # without random crop / flip
+python train.py --pretrained   # fine-tune torchvision's ImageNet-pretrained AlexNet
 ```
 
-Runs are reproducible: the model init, data shuffling, augmentation and train/validation split are all seeded. Hyperparameters are constants at the top of `train.py` (batch size 64, 60 epochs, Adam lr 1e-4, weight decay 5e-5, lr × 0.1 at epoch 45). A run saves:
+Runs are reproducible: the model init, data shuffling, augmentation and train/validation split are all seeded. Hyperparameters are constants at the top of `train.py` (batch size 64, 60 epochs, Adam lr 1e-4, weight decay 5e-5, lr × 0.1 at epoch 45). A run saves (the variants add `_no-aug` or `_pretrained` to the name):
 - `models/wdecay-5e-05_epoch-60`: checkpoint after the last epoch
 - `models/wdecay-5e-05_epoch-60_best`: checkpoint from the epoch with the best validation mAP
 - `log/wdecay-5e-05_epoch-60.json`: metrics for every epoch
@@ -126,6 +148,14 @@ python test.py
 python test.py models/wdecay-5e-05_epoch-60_best
 ```
 
+It prints the metrics and the AP of every class, and saves them to `log/<checkpoint name>_test.json`.
+
+Make the figures in this README (after training and testing the three runs):
+
+```bash
+python plot_results.py
+```
+
 Other scripts:
 - `ut.py`: checks the model output shape and the dataset shapes, shows some training images with their labels
 - `utils.py`: plots the class distribution of the train/validation split
@@ -134,10 +164,11 @@ Other scripts:
 ## Project structure
 
 ```
-├── model.py      AlexNet
+├── model.py      AlexNet (and the torchvision pretrained version)
 ├── dataset.py    PascalDataset, image transforms and multi-hot labels
 ├── train.py      training loop, validation, hyperparameters
 ├── test.py       evaluation on VOC2007 test
+├── plot_results.py  figures for the README
 ├── utils.py      metrics (mAP, F1, ...) and class distribution plot
 ├── ut.py         shape checks and visualization
 ├── overfit.py    overfitting sanity check

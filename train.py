@@ -1,5 +1,5 @@
 import torch
-from model import AlexNet
+from model import AlexNet, pretrained_alexnet
 import dataset
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
@@ -12,6 +12,7 @@ import numpy as np
 import os
 import logging
 import json
+import sys
 
 
 
@@ -30,7 +31,17 @@ W_DECAY = 0.00005
 W_INIT = 0.01
 LR = 0.0001
 SCHEDULER_STEP = 45
+AUGMENT = True
+PRETRAINED = False
+if "--no-aug" in sys.argv:
+    AUGMENT = False
+if "--pretrained" in sys.argv:
+    PRETRAINED = True
 OUTPUT_FILENAME = "wdecay-{}_epoch-{}".format(W_DECAY, NUM_EPOCHS)
+if not AUGMENT:
+    OUTPUT_FILENAME = OUTPUT_FILENAME + "_no-aug"
+if PRETRAINED:
+    OUTPUT_FILENAME = OUTPUT_FILENAME + "_pretrained"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 classes = {
     0: "aeroplane",
@@ -146,7 +157,10 @@ def valid(model, device, valid_loader):
 def main():
     # set a seed to make code reproducive
     torch.manual_seed(0)
-    model = AlexNet(NUM_CLASSES).to(device)
+    if PRETRAINED:
+        model = pretrained_alexnet(NUM_CLASSES).to(device)
+    else:
+        model = AlexNet(NUM_CLASSES).to(device)
     history = {
         "train_loss": [],
         "valid_loss": [],
@@ -175,6 +189,7 @@ def main():
     data = pd.read_csv(TRAIN_CSV, names=["images", "labels"])
 
     print("opt lr:", optimizer.param_groups[0]["lr"])
+    print("Run:", OUTPUT_FILENAME, "augment:", AUGMENT, "pretrained:", PRETRAINED)
     indexes = []
     for i in range(data.shape[0]):
         if data.iloc[i, 0].endswith(".jpg"):
@@ -187,7 +202,7 @@ def main():
     valid_index = indexes[split:]
     # create datasets with fold indexes
     train_dataset = dataset.PascalDataset(
-        TRAIN_CSV, IMG_DIR, LABEL_DIR, NUM_CLASSES, train_index, train=True
+        TRAIN_CSV, IMG_DIR, LABEL_DIR, NUM_CLASSES, train_index, train=AUGMENT
     )
     valid_dataset = dataset.PascalDataset(
         TRAIN_CSV, IMG_DIR, LABEL_DIR, NUM_CLASSES, valid_index
