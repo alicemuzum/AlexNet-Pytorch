@@ -211,6 +211,8 @@ def main():
         drop_last=False,
     )
 
+    best_map = 0
+    best_epoch = 0
     for epoch in range(NUM_EPOCHS):
         train_loss, train_metrics = train(model, device, train_loader, optimizer)
         valid_loss, validation_metrics = valid(model, device, valid_loader)
@@ -248,7 +250,20 @@ def main():
         history["train_map"].append(train_metrics["map"])
         history["valid_map"].append(validation_metrics["map"])
 
+        if validation_metrics["map"] > best_map:
+            best_map = validation_metrics["map"]
+            best_epoch = epoch + 1
+            best_state = {
+                "epoch": epoch,
+                "optimizer": optimizer.state_dict(),
+                "model": model.state_dict(),
+            }
+            torch.save(best_state, os.path.join(CHECKPOINT_DIR, OUTPUT_FILENAME + "_best"))
+            print("New best valid mAP {:.4f}, saved {}".format(best_map, OUTPUT_FILENAME + "_best"))
+
     history["RUN"] = 0
+    history["best_epoch"] = best_epoch
+    history["best_valid_map"] = best_map
     with open(os.path.join(LOG_DIR, OUTPUT_FILENAME + ".json"), "w") as f:
         json.dump(history, f)
 

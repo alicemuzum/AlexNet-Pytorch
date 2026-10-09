@@ -113,8 +113,9 @@ Train:
 python train.py
 ```
 
-Hyperparameters are constants at the top of `train.py` (batch size 64, 60 epochs, Adam lr 1e-4, weight decay 5e-5, lr × 0.1 at epoch 45). A run saves:
-- `models/wdecay-5e-05_epoch-60`: checkpoint
+Runs are reproducible: the model init, data shuffling, augmentation and train/validation split are all seeded. Hyperparameters are constants at the top of `train.py` (batch size 64, 60 epochs, Adam lr 1e-4, weight decay 5e-5, lr × 0.1 at epoch 45). A run saves:
+- `models/wdecay-5e-05_epoch-60`: checkpoint after the last epoch
+- `models/wdecay-5e-05_epoch-60_best`: checkpoint from the epoch with the best validation mAP
 - `log/wdecay-5e-05_epoch-60.json`: metrics for every epoch
 - `plots/wdecay-5e-05_epoch-60.png`: loss and mAP curves
 
@@ -122,7 +123,7 @@ Evaluate on the test set (uses the checkpoint from `train.py` by default):
 
 ```bash
 python test.py
-python test.py models/some_other_checkpoint
+python test.py models/wdecay-5e-05_epoch-60_best
 ```
 
 Other scripts:
