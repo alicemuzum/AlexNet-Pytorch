@@ -8,6 +8,7 @@ class AlexNet(nn.Module):
     def __init__(self, num_classes,input_ch=3,):
         super(AlexNet,self).__init__()
         self.input_ch = input_ch
+        self.num_classes = num_classes
         self._create_net()
         
     def forward(self,x):
@@ -37,16 +38,18 @@ class AlexNet(nn.Module):
             nn.Conv2d(384,384,3,padding=1),
             nn.ReLU(),
             nn.Conv2d(384,256,3,padding=1),
+            nn.ReLU(),
             nn.MaxPool2d(3,2),
         )
         self.linear = nn.Sequential(
             nn.Flatten(),
+            nn.Dropout(0.5),
             nn.Linear(256*6*6,4096),
             nn.ReLU(),
-            nn.Dropout(0.8),
-            nn.Linear(4096,2048),
+            nn.Dropout(0.5),
+            nn.Linear(4096,4096),
             nn.ReLU(),
-            nn.Linear(2048,20)
+            nn.Linear(4096,self.num_classes)
         )
 
   

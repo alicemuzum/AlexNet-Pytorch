@@ -18,12 +18,10 @@ import json
 
 IMG_SIZE = 227
 TRAIN_CSV = "../data/PascalVOC/train.csv"
-TEST_CSV = "../data/PascalVOC/train.csv"
 IMG_DIR = "../data/PascalVOC/images"
 LABEL_DIR = "../data/PascalVOC/labels"
 LOG_DIR = "log"
 CHECKPOINT_DIR = "models"
-OUTPUT_FILENAME = "wdecay-0.00005_epoch-120"
 NUM_CLASSES = 20
 BATCH_SIZE = 64
 NUM_EPOCHS = 60
@@ -31,8 +29,8 @@ MOMENTUM = 0.9
 W_DECAY = 0.00005
 W_INIT = 0.01
 LR = 0.0001
-K = 2
 SCHEDULER_STEP = 45
+OUTPUT_FILENAME = "wdecay-{}_epoch-{}".format(W_DECAY, NUM_EPOCHS)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 classes = {
     0: "aeroplane",
@@ -61,7 +59,9 @@ classes = {
 def train(model, device, train_loader, optimizer):
     loop = tqdm(train_loader)
     mean_loss = []
-    train_metrics = {'acc':[], 'hamming_loss':[], 'precision':[], 'recall':[], 'f1':[]}
+    all_labels = []
+    all_scores = []
+    all_preds = []
     model.train()
     for img_batch, label_batch in loop:
         # send one batch of data  to gpu if available
@@ -87,13 +87,16 @@ def train(model, device, train_loader, optimizer):
             y_pred.append([1 if i >= 0.5 else 0 for i in sample])
         y_pred = np.array(y_pred)
 
-        metrics = utils.get_metrics(label_batch,y_pred)
-        for m in metrics:
-            train_metrics[m].append(metrics[m])
+        all_labels.append(label_batch)
+        all_scores.append(output)
+        all_preds.append(y_pred)
 
-    for i in train_metrics:
-        train_metrics[i] = sum(train_metrics[i]) / len(train_metrics[i])
-    loss = sum(mean_loss) / BATCH_SIZE
+    all_labels = np.concatenate(all_labels)
+    all_scores = np.concatenate(all_scores)
+    all_preds = np.concatenate(all_preds)
+    train_metrics = utils.get_metrics(all_labels, all_preds)
+    train_metrics["map"], ap_list = utils.get_map(all_labels, all_scores)
+    loss = sum(mean_loss) / len(mean_loss)
     return loss, train_metrics
             
     
@@ -101,7 +104,9 @@ def train(model, device, train_loader, optimizer):
 
 def valid(model, device, valid_loader):
     mean_loss = []
-    valid_metrics = {'acc':[], 'hamming_loss':[], 'precision':[], 'recall':[], 'f1':[]}
+    all_labels = []
+    all_scores = []
+    all_preds = []
     # block layers like normalization or dropout for inference
     model.eval()
     with torch.no_grad():
@@ -121,14 +126,17 @@ def valid(model, device, valid_loader):
                 y_pred.append([1 if i >= 0.5 else 0 for i in sample])
             y_pred = np.array(y_pred)
 
-            metrics = utils.get_metrics(label_batch,y_pred)
-            for m in metrics:
-                valid_metrics[m].append(metrics[m])
-    
-    for i in valid_metrics:
-        valid_metrics[i] = sum(valid_metrics[i]) / len(valid_metrics[i])
+            all_labels.append(label_batch)
+            all_scores.append(output)
+            all_preds.append(y_pred)
 
-    loss = sum(mean_loss) / BATCH_SIZE
+    all_labels = np.concatenate(all_labels)
+    all_scores = np.concatenate(all_scores)
+    all_preds = np.concatenate(all_preds)
+    valid_metrics = utils.get_metrics(all_labels, all_preds)
+    valid_metrics["map"], ap_list = utils.get_map(all_labels, all_scores)
+
+    loss = sum(mean_loss) / len(mean_loss)
     return  loss, valid_metrics
             
 
@@ -152,6 +160,8 @@ def main():
         "valid_recall": [],
         "train_f1": [],
         "valid_f1": [],
+        "train_map": [],
+        "valid_map": [],
     }
     optimizer = optim.Adam(
         params=model.parameters(),
@@ -165,11 +175,19 @@ def main():
     data = pd.read_csv(TRAIN_CSV, names=["images", "labels"])
 
     print("opt lr:", optimizer.param_groups[0]["lr"])
-    train_index = np.arange(0,int((data.shape[0] * 2) / 3))
-    valid_index = np.arange(int((data.shape[0] * 2) / 3), data.shape[0])
+    indexes = []
+    for i in range(data.shape[0]):
+        if data.iloc[i, 0].endswith(".jpg"):
+            indexes.append(i)
+    indexes = np.array(indexes)
+    np.random.seed(0)
+    np.random.shuffle(indexes)
+    split = int((len(indexes) * 2) / 3)
+    train_index = indexes[:split]
+    valid_index = indexes[split:]
     # create datasets with fold indexes
     train_dataset = dataset.PascalDataset(
-        TRAIN_CSV, IMG_DIR, LABEL_DIR, NUM_CLASSES, train_index
+        TRAIN_CSV, IMG_DIR, LABEL_DIR, NUM_CLASSES, train_index, train=True
     )
     valid_dataset = dataset.PascalDataset(
         TRAIN_CSV, IMG_DIR, LABEL_DIR, NUM_CLASSES, valid_index
@@ -188,9 +206,9 @@ def main():
         dataset=valid_dataset,
         batch_size=BATCH_SIZE,
         pin_memory=True,
-        shuffle=True,
+        shuffle=False,
         num_workers=8,
-        drop_last=True,
+        drop_last=False,
     )
 
     for epoch in range(NUM_EPOCHS):
@@ -200,7 +218,7 @@ def main():
         lr_scheduler.step()
 
         print(
-            "Epoch:{}/{} Training Loss:{:.3f} Valid Loss:{:.3f} Train Acc {:.2f} % Valid Acc {:.2f} % Hamming Loss {:.2f} Precision {:.2f} Recall {:.2f} F_1 {:.2f}".format(
+            "Epoch:{}/{} Training Loss:{:.3f} Valid Loss:{:.3f} Train Acc {:.2f} % Valid Acc {:.2f} % Hamming Loss {:.2f} Precision {:.2f} Recall {:.2f} F_1 {:.2f} Train mAP {:.3f} Valid mAP {:.3f}".format(
                 epoch + 1,
                 NUM_EPOCHS,
                 train_loss,
@@ -211,6 +229,8 @@ def main():
                 train_metrics["precision"],
                 train_metrics["recall"],
                 train_metrics["f1"],
+                train_metrics["map"],
+                validation_metrics["map"],
             )
         )
         history["train_loss"].append(train_loss)
@@ -225,9 +245,11 @@ def main():
         history["valid_recall"].append(validation_metrics["recall"])
         history["train_f1"].append(train_metrics["f1"])
         history["valid_f1"].append(validation_metrics["f1"])
+        history["train_map"].append(train_metrics["map"])
+        history["valid_map"].append(validation_metrics["map"])
 
     history["RUN"] = 0
-    with open("log/history.json", "a") as f:
+    with open(os.path.join(LOG_DIR, OUTPUT_FILENAME + ".json"), "w") as f:
         json.dump(history, f)
 
     checkpoint_path = os.path.join(
@@ -242,12 +264,14 @@ def main():
 
     plt.subplot(2,1,1) 
     plt.title("Loss")
-    plt.plot(range(K * NUM_EPOCHS), history['train_loss'], "r", range(K * NUM_EPOCHS), history['valid_loss'],"g")
+    plt.plot(range(NUM_EPOCHS), history['train_loss'], "r", range(NUM_EPOCHS), history['valid_loss'],"g")
 
     plt.subplot(2,1,2) 
-    plt.title("Accuracy")
-    plt.plot(range(K * NUM_EPOCHS), history['train_acc'], "r", range(K * NUM_EPOCHS), history['valid_acc'],"g")
+    plt.title("mAP")
+    plt.plot(range(NUM_EPOCHS), history['train_map'], "r", range(NUM_EPOCHS), history['valid_map'],"g")
 
+    plt.tight_layout()
+    plt.savefig(os.path.join("plots", OUTPUT_FILENAME + ".png"))
     plt.show()
 
     avg_train_loss = np.mean(history["train_loss"])
@@ -263,7 +287,6 @@ def main():
     avg_train_f1 = np.mean(history["train_f1"])
     avg_valid_f1 = np.mean(history["valid_f1"])
 
-    print("Performance of {} fold cross validation".format(K))
     logging.basicConfig(
         filename="history.log", format="%(name)s - %(levelname)s - %(message)s", level= logging.INFO
     )

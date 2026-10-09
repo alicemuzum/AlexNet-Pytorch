@@ -31,6 +31,20 @@ def get_metrics(label_batch, y_pred):
         "f1": f_1,
     }
 
+def get_map(labels, scores):
+    ap_list = []
+    total = 0
+    count = 0
+    for c in range(labels.shape[1]):
+        if labels[:, c].sum() > 0:
+            ap = metrics.average_precision_score(labels[:, c], scores[:, c])
+            total += ap
+            count += 1
+        else:
+            ap = 0
+        ap_list.append(ap)
+    return total / count, ap_list
+
 def plot_class_dist(set):
     
     classes = []

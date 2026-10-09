@@ -21,8 +21,10 @@ class Tester(unittest.TestCase):
         def visualize():
             for i in range(4):
                 
-                idx = np.random.choice(train_index)
+                idx = np.random.randint(0, len(train_dataset))
                 image  = np.transpose(train_dataset[idx][0].numpy(),(1,2,0))
+                image = image * np.array([0.229, 0.224, 0.225]) + np.array([0.485, 0.456, 0.406])
+                image = np.clip(image, 0, 1)
                 
                 cl = [idx for idx, _ in enumerate(train_dataset[idx][1].numpy()) if _ == 1]
                 title = [t.classes[label] for label in cl]

@@ -5,7 +5,7 @@ from PIL import Image
 import torchvision.transforms as T
 
 class PascalDataset(torch.utils.data.Dataset):
-    def __init__(self, csv_file, img_dir, label_dir, num_classes, fold_indexes):
+    def __init__(self, csv_file, img_dir, label_dir, num_classes, fold_indexes, train=False):
         super(PascalDataset,self).__init__()
         self.annotations = pd.read_csv(csv_file,names=["images","labels"])  
         self.annotations = self.annotations.iloc[fold_indexes] # slice data according to the fold
@@ -13,6 +13,7 @@ class PascalDataset(torch.utils.data.Dataset):
         self.label_dir = label_dir
         self.num_classes = num_classes
         self.fold_indexes = fold_indexes
+        self.train = train
     
     def get_annotations(self):
         return self.annotations
@@ -31,15 +32,25 @@ class PascalDataset(torch.utils.data.Dataset):
     
 
         image = Image.open(image_dir)
-        transform = T.Compose([
-            T.Resize(256),
-            T.CenterCrop(227),
-            T.ToTensor()
-        ])
+        if self.train:
+            transform = T.Compose([
+                T.Resize(256),
+                T.RandomCrop(227),
+                T.RandomHorizontalFlip(),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+        else:
+            transform = T.Compose([
+                T.Resize(256),
+                T.CenterCrop(227),
+                T.ToTensor(),
+                T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
         image = transform(image)
 
 
-        labels = torch.zeros(20)
+        labels = torch.zeros(self.num_classes)
         for c in classes:
 
             if labels[int(c)] == 0:
